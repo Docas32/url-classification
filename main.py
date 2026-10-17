@@ -1,5 +1,7 @@
 from urllib.parse import urlparse
 import re
+from sklearn.feature_extraction.text import TfidfVectorizer
+import pandas as pd
 
 def limpar_url(url):
     """
@@ -38,18 +40,40 @@ def limpar_url(url):
         return ""
 
 
+# lista de URLs brutas para teste
+urls_brutas = [
+    "https://www.uol.com.br/futebol/noticias",
+    "http://www.example.com/path/to/page?query=param",
+    "https://subdomain.example.org/another/path/",
+    "www.testsite.com/some-page.html",
+    "http://www.sample-site.net/index.php?id=123&cat=456",
+    "https://www.another-example.com/path/to/resource?search=query&sort=asc",
+    "http://www.example.com/path/to/page?query=param#section",
+    "https://www.example.com/path/to/page?query=param&another=value",
+    "http://www.example.com/path/to/page?query=param&another=value#section",
+    "https://www.example.com/path/to/page?query=param&another=value#section2"
+]
+
+# 1. Aplicando o pipeline de limpeza de URLs em lote
+
+urls_limpas = [limpar_url(url) for url in urls_brutas]
+
+# 2. Inicializando o Vectorizer TF-IDF
+# Usamos ngram_range=(1, 2) para capturar palavras isoladas (ex "nba") e pares de palavras (ex "yahoo com")
+vetorizador = TfidfVectorizer(ngram_range=(1, 2), max_features= 15)
+
+# 3. Ajustando e transformando as strings em matriz numerica (vetorizacão)
+matriz_tfidf = vetorizador.fit_transform(urls_limpas)
+
+# --- Verificando os resultados ---
+# Convertendo a matriz TF-IDF para um DataFrame do Pandas para melhor visualização
+nome_dos_recuros = vetorizador.get_feature_names_out()
+df_features = pd.DataFrame(matriz_tfidf.toarray(), columns=nome_dos_recuros, index=urls_brutas)
+
 # Exemplo de uso
 if __name__ == "__main__":
-    urls = [
-        "https://www.uol.com.br/futebol/noticias",
-        "http://example.com/path/to/page?query=param",
-        "www.test-site.org/another/path/",
-        "https://subdomain.example.co.uk/path/to/resource.html",
-        "invalid-url",
-        "help/Python.html"
-    ]
-    print("=== Resultados da limpeza de URLs ===")
-    for url in urls:
-        cleaned_url = limpar_url(url)
-        print(f"URL original: {url} -> URL limpa: {cleaned_url}")
+    
+    print("=== MATRIZ TF-IDF GERADA (RECURSOS NUMÉRICOS)    ===")
+    print(df_features.round(3))  # Arredondando para 3 casas decimais para melhor visualização
+
 
